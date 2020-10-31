@@ -152,14 +152,44 @@ impl<'a> StatefulWidget for Rain<'a> {
     }
 }
 
-pub struct KanaBorder;
+#[derive(Default)]
+pub struct KanaBorder<'a> {
+    title: Option<&'a str>,
+}
 
 #[derive(Default)]
 pub struct KanaBorderState {
     chars: Vec<char>,
 }
 
-impl StatefulWidget for KanaBorder {
+impl<'a> KanaBorder<'a> {
+    pub const fn title(self, title: &'a str) -> Self {
+        Self { title: Some(title) }
+    }
+
+    fn draw_title(&self, area: Rect, buf: &mut Buffer) {
+        if let Some(title) = self.title {
+            let pos = Rect::new(
+                area.x + area.width / 2 - title.len() as u16 + 2,
+                area.y,
+                title.len() as u16,
+                1,
+            );
+            buf.get_mut(pos.left() - 1, pos.top()).reset();
+            buf.set_string(
+                pos.left(),
+                pos.top(),
+                title,
+                Style::default()
+                    .fg(Color::Indexed(47))
+                    .add_modifier(Modifier::BOLD),
+            );
+            buf.get_mut(pos.right(), pos.top()).reset();
+        }
+    }
+}
+
+impl<'a> StatefulWidget for KanaBorder<'a> {
     type State = KanaBorderState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
@@ -186,6 +216,8 @@ impl StatefulWidget for KanaBorder {
                         .add_modifier(Modifier::BOLD),
                 );
             });
+
+        self.draw_title(area, buf);
     }
 }
 

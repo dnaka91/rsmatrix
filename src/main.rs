@@ -81,13 +81,14 @@ fn main() -> Result<()> {
 
             match showing {
                 Showing::Menu => {
+                    let border = KanaBorder::default().title("MENU");
                     let list = KanaList::new(list_items);
 
                     let r = Rect::new(0, 0, 40, 4 + list_items.len() as u16);
                     let r = r.center_in(size);
 
                     f.render_widget(Clear, r);
-                    f.render_stateful_widget(KanaBorder, r, &mut border_state);
+                    f.render_stateful_widget(border, r, &mut border_state);
 
                     let r = r.inner(&Margin {
                         vertical: 2,
@@ -96,20 +97,21 @@ fn main() -> Result<()> {
                     f.render_stateful_widget(list, r, &mut list_state);
                 }
                 Showing::Help => {
+                    let border = KanaBorder::default().title("HELP");
+                    let help =
+                        Paragraph::new(HELP_TEXT).style(Style::default().fg(Color::Indexed(47)));
+
                     let r = Rect::new(0, 0, 68, 11).center_in(size);
 
                     f.render_widget(Clear, r);
-                    f.render_stateful_widget(KanaBorder, r, &mut border_state);
+                    f.render_stateful_widget(border, r, &mut border_state);
 
                     let r = r.inner(&Margin {
                         vertical: 2,
                         horizontal: 3,
                     });
 
-                    f.render_widget(
-                        Paragraph::new(HELP_TEXT).style(Style::default().fg(Color::Indexed(47))),
-                        r,
-                    );
+                    f.render_widget(help, r);
                 }
                 Showing::Nothing => {}
             }
