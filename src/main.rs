@@ -2,7 +2,10 @@
 #![deny(rust_2018_idioms, clippy::all)]
 #![warn(clippy::nursery)]
 
-use std::io;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::{self, BufReader};
+use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 use std::time::Duration;
@@ -26,7 +29,7 @@ mod matrix;
 mod twitch;
 
 #[derive(Clap)]
-#[clap(setting = AppSettings::ColoredHelp)]
+#[clap(global_setting = AppSettings::ColoredHelp)]
 struct Opt {
     /// Frames per second.
     #[clap(short, long, default_value = "25")]
@@ -34,8 +37,21 @@ struct Opt {
     /// Drops per second.
     #[clap(short, long, default_value = "5")]
     dps: u64,
+    #[clap(subcommand)]
+    source: Option<Source>,
+}
+
+#[derive(Clap)]
+enum Source {
+    File {
+        /// Location to the file containing names.
+        path: PathBuf,
+    },
     #[cfg(feature = "twitch")]
-    twitch_username: String,
+    Twitch {
+        /// Streamer name to load viewer names from.
+        username: String,
+    },
 }
 
 #[derive(Eq, PartialEq)]
@@ -58,10 +74,15 @@ The following commands can be used:
 fn main() -> Result<()> {
     let opt = Opt::parse();
 
-    #[cfg(feature = "twitch")]
-    let namelist = twitch::get_viewers(&opt.twitch_username)?;
-    #[cfg(not(feature = "twitch"))]
-    let namelist = vec!["test".to_owned()];
+    let namelist = if let Some(source) = opt.source {
+        match source {
+            Source::File { path } => load_file(path)?,
+            #[cfg(feature = "twitch")]
+            Source::Twitch { username } => twitch::get_viewers(&username)?,
+        }
+    } else {
+        vec!["test".to_owned()]
+    };
 
     let mut terminal = create_terminal()?;
     let events = create_event_listener();
@@ -212,4 +233,11 @@ impl RectExt for Rect {
             self.height,
         )
     }
+}
+
+fn load_file(path: PathBuf) -> Result<Vec<String>> {
+    BufReader::new(File::open(path)?)
+        .lines()
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(Into::into)
 }
