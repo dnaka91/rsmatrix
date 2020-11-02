@@ -8,7 +8,7 @@ use std::io::{self, BufReader};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use clap::{AppSettings, Clap};
@@ -22,7 +22,9 @@ use tui::{
     Terminal,
 };
 
-use crate::matrix::{KanaBorder, KanaBorderState, KanaList, KanaListState, Rain, RainState};
+use crate::matrix::{
+    Countdown, KanaBorder, KanaBorderState, KanaList, KanaListState, Rain, RainState,
+};
 
 mod matrix;
 #[cfg(feature = "twitch")]
@@ -59,6 +61,7 @@ enum Showing {
     Nothing,
     Menu,
     Help,
+    Time,
 }
 
 const HELP_TEXT: &str = "\
@@ -68,6 +71,8 @@ The following commands can be used:
 
   - h toggle this help message
   - m toggle the menu to navigate to different areas
+    - ▲ navigate menu up
+    - ▼ navigate menu down
   - q quit the application\
 ";
 
@@ -92,8 +97,9 @@ fn main() -> Result<()> {
     let mut border_state = KanaBorderState::default();
     let mut list_state = KanaListState::default();
     let mut showing = Showing::Nothing;
+    let mut timer_start = Instant::now();
 
-    let list_items = &["Item 1", "Item 2", "Item 3", "Item 4"];
+    let list_items = &["Countdown"];
 
     'drawloop: loop {
         terminal.draw(|f| {
@@ -122,7 +128,7 @@ fn main() -> Result<()> {
                     let help =
                         Paragraph::new(HELP_TEXT).style(Style::default().fg(Color::Indexed(47)));
 
-                    let r = Rect::new(0, 0, 68, 11).center_in(size);
+                    let r = Rect::new(0, 0, 68, 13).center_in(size);
 
                     f.render_widget(Clear, r);
                     f.render_stateful_widget(border, r, &mut border_state);
@@ -133,6 +139,13 @@ fn main() -> Result<()> {
                     });
 
                     f.render_widget(help, r);
+                }
+                Showing::Time => {
+                    let duration = Duration::from_millis(300_500)
+                        .checked_sub(timer_start.elapsed())
+                        .unwrap_or_default();
+
+                    f.render_widget(Countdown { duration }, size);
                 }
                 Showing::Nothing => {}
             }
@@ -166,10 +179,15 @@ fn main() -> Result<()> {
                     }
                 }
                 KeyEvent::Select => {
-                    if matches!(showing, Showing::Menu) {
-                        showing = Showing::Nothing;
+                    if showing == Showing::Menu {
+                        showing = match list_state.selected() {
+                            0 => {
+                                timer_start = std::time::Instant::now();
+                                Showing::Time
+                            }
+                            _ => Showing::Nothing,
+                        }
                     }
-                    // TODO: Do something with the menu item
                 }
             }
         }

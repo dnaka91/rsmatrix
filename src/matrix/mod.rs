@@ -7,8 +7,12 @@ use tui::{
     layout::Rect,
     style::Modifier,
     style::{Color, Style},
-    widgets::StatefulWidget,
+    widgets::{StatefulWidget, Widget},
 };
+
+use crate::RectExt;
+
+mod asciiart;
 
 #[derive(Copy, Clone)]
 pub struct Rain<'a> {
@@ -102,16 +106,21 @@ impl<'a> Element<'a> {
     }
 }
 
+#[inline]
 fn random_char(rng: &mut impl Rng) -> char {
     match rng.next_u32() % 5 {
-        0 => ('A'..='Z'),
-        1 => ('0'..='9'),
-        _ => ('\u{ff66}'..='\u{ff9d}'), // Half-Width Katakana
+        0 => ('A'..='Z').choose(rng).unwrap(),
+        1 => random_digit(rng),
+        _ => random_katakana(rng), // Half-Width Katakana
     }
-    .choose(rng)
-    .unwrap()
 }
 
+#[inline]
+fn random_digit(rng: &mut impl Rng) -> char {
+    ('0'..='9').choose(rng).unwrap()
+}
+
+#[inline]
 fn random_katakana(rng: &mut impl Rng) -> char {
     ('\u{ff66}'..='\u{ff9d}').choose(rng).unwrap()
 }
@@ -253,6 +262,10 @@ impl Default for KanaListState {
 }
 
 impl KanaListState {
+    pub const fn selected(&self) -> usize {
+        self.selected
+    }
+
     pub fn next(&mut self, items: &[&str]) {
         self.selected = (self.selected + 1) % items.len();
     }
@@ -289,5 +302,48 @@ impl<'a> StatefulWidget for KanaList<'a> {
 
             buf.set_string(area.left() + 2, area.top() + i as u16, item, style);
         }
+    }
+}
+
+pub struct Countdown {
+    pub duration: Duration,
+}
+
+impl Countdown {
+    fn draw_box(area: Rect, buf: &mut Buffer, rng: &mut impl Rng, symbol: [u8; 100]) {
+        for (y, row) in symbol.chunks_exact(10).enumerate() {
+            for (x, set) in row.iter().enumerate() {
+                if *set != 0 {
+                    let cell = buf.get_mut(area.x + x as u16, area.y + y as u16);
+                    cell.reset();
+                    cell.set_bg(Color::Indexed(if rng.next_u32() % 5 == 0 {
+                        35
+                    } else {
+                        23
+                    }))
+                    .set_fg(Color::Indexed(47))
+                    .set_char(random_digit(rng));
+                }
+            }
+        }
+    }
+}
+
+impl Widget for Countdown {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let rng = &mut rand::thread_rng();
+        let mut r = Rect::new(0, 0, 54, 10).center_in(area);
+
+        let secs = self.duration.as_secs() as usize;
+
+        Self::draw_box(r, buf, rng, self::asciiart::DIGITS[secs / 60 / 10]);
+        r.x += 11;
+        Self::draw_box(r, buf, rng, self::asciiart::DIGITS[secs / 60 % 10]);
+        r.x += 11;
+        Self::draw_box(r, buf, rng, self::asciiart::SEMICOLON);
+        r.x += 11;
+        Self::draw_box(r, buf, rng, self::asciiart::DIGITS[secs % 60 / 10]);
+        r.x += 11;
+        Self::draw_box(r, buf, rng, self::asciiart::DIGITS[secs % 10]);
     }
 }
