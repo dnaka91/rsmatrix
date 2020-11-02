@@ -202,13 +202,18 @@ impl<'a> StatefulWidget for KanaBorder<'a> {
             .chain((area.top() + 1..area.bottom() - 1).map(|y| (area.right() - 1, y)))
             .enumerate()
             .for_each(|(i, (x, y))| {
-                let c = if let Some(c) = state.chars.get(i) {
+                let mut c = if let Some(c) = state.chars.get(i) {
                     *c
                 } else {
                     let c = random_katakana(rng);
                     state.chars.push(c);
                     c
                 };
+
+                if rng.next_u32() % 100 == 0 {
+                    c = random_katakana(rng);
+                    state.chars[i] = c;
+                }
 
                 buf.get_mut(x, y).set_char(c).set_style(
                     Style::default()
