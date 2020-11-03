@@ -34,10 +34,10 @@ mod twitch;
 #[clap(global_setting = AppSettings::ColoredHelp)]
 struct Opt {
     /// Frames per second.
-    #[clap(short, long, default_value = "25")]
+    #[clap(short, long, default_value = "5")]
     fps: u64,
     /// Drops per second.
-    #[clap(short, long, default_value = "5")]
+    #[clap(short, long, default_value = "3")]
     dps: u64,
     #[clap(subcommand)]
     source: Option<Source>,
@@ -63,6 +63,8 @@ enum Showing {
     Help,
     Time,
 }
+
+const SLEEP_TIME: Duration = Duration::from_millis(1000 / 25);
 
 const HELP_TEXT: &str = "\
 Welcome to rsmatrix a Matrix rain screensaver written in Rust.
@@ -92,8 +94,9 @@ fn main() -> Result<()> {
     let mut terminal = create_terminal()?;
     let events = create_event_listener();
 
-    let sleep_time = Duration::from_millis(1000 / opt.fps);
-    let mut state = RainState::new(Duration::from_millis(1000 / opt.dps));
+    let update_speed = Duration::from_millis(1000 / opt.fps);
+    let drop_speed = Duration::from_millis(1000 / opt.dps);
+    let mut state = RainState::new();
     let mut border_state = KanaBorderState::default();
     let mut list_state = KanaListState::default();
     let mut showing = Showing::Nothing;
@@ -104,7 +107,11 @@ fn main() -> Result<()> {
     'drawloop: loop {
         terminal.draw(|f| {
             let size = f.size();
-            f.render_stateful_widget(Rain::new(47, &namelist), size, &mut state);
+            f.render_stateful_widget(
+                Rain::new(47, &namelist, update_speed, drop_speed),
+                size,
+                &mut state,
+            );
 
             match showing {
                 Showing::Menu => {
@@ -151,7 +158,7 @@ fn main() -> Result<()> {
             }
         })?;
 
-        thread::sleep(sleep_time);
+        thread::sleep(SLEEP_TIME);
 
         while let Ok(event) = events.try_recv() {
             match event {

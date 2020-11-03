@@ -17,26 +17,37 @@ mod asciiart;
 #[derive(Copy, Clone)]
 pub struct Rain<'a> {
     namelist: &'a [String],
+    update_speed: Duration,
+    drop_speed: Duration,
 }
 
 impl<'a> Rain<'a> {
-    pub const fn new(_color: u8, namelist: &'a [String]) -> Self {
-        Self { namelist }
+    pub const fn new(
+        _color: u8,
+        namelist: &'a [String],
+        update_speed: Duration,
+        drop_speed: Duration,
+    ) -> Self {
+        Self {
+            namelist,
+            update_speed,
+            drop_speed,
+        }
     }
 }
 
 pub struct RainState<'a> {
     elements: Vec<Element<'a>>,
-    drop_speed: Duration,
     last_drop: Instant,
+    last_update: Instant,
 }
 
 impl<'a> RainState<'a> {
-    pub fn new(drop_speed: Duration) -> Self {
+    pub fn new() -> Self {
         Self {
             elements: Vec::new(),
-            drop_speed,
             last_drop: Instant::now(),
+            last_update: Instant::now(),
         }
     }
 }
@@ -132,7 +143,7 @@ impl<'a> StatefulWidget for Rain<'a> {
         let rng = &mut rand::thread_rng();
 
         // Drop a new raindrop if needed.
-        if state.last_drop.elapsed() > state.drop_speed {
+        if state.last_drop.elapsed() > self.drop_speed {
             let element = match state.elements.iter_mut().find(|e| !e.active) {
                 Some(element) => element,
                 None => {
@@ -147,6 +158,13 @@ impl<'a> StatefulWidget for Rain<'a> {
             state.last_drop = Instant::now();
         }
 
+        let step = if state.last_update.elapsed() > self.update_speed {
+            state.last_update = Instant::now();
+            true
+        } else {
+            false
+        };
+
         // Draw all active raindrops.
         for element in state.elements.iter_mut().filter(|e| e.active) {
             if !element.update_active(area) {
@@ -156,7 +174,9 @@ impl<'a> StatefulWidget for Rain<'a> {
             element.draw_name(area, buf);
             element.draw_tail(area, buf);
 
-            element.step();
+            if step {
+                element.step();
+            }
         }
     }
 }
