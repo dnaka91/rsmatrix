@@ -28,4 +28,3 @@ twitch = ["attohttpc", "serde"]
 
 [profile.release]
 lto = true
-panic = "abort"
