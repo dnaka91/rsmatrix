@@ -108,7 +108,7 @@ fn main() -> Result<()> {
         terminal.draw(|f| {
             let size = f.size();
             f.render_stateful_widget(
-                Rain::new(47, &namelist, update_speed, drop_speed),
+                Rain::new(&namelist, update_speed, drop_speed),
                 size,
                 &mut state,
             );
