@@ -1,5 +1,6 @@
 //!
 
+use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
 use rand::distributions::Uniform;
@@ -69,7 +70,7 @@ struct RainDrop<'a> {
     /// Name to draw at the tip.
     name: &'a str,
     /// Tail that's drawn directly behind the name.
-    trail: Vec<char>,
+    trail: VecDeque<char>,
     /// Current position within the terminal.
     pos: (u16, u16),
     /// Flag to tell whether a drop is still visible. Allows to keep a pool of drops for reuse.
@@ -134,8 +135,10 @@ impl<'a> RainDrop<'a> {
     }
 
     /// Move the drop one step forward. This simply moves it one line down.
-    fn step(&mut self) {
+    fn step(&mut self, rng: &mut impl Rng) {
         self.pos.1 += 1;
+        self.trail.push_front(random_char(rng));
+        self.trail.pop_back();
     }
 }
 
@@ -201,7 +204,7 @@ impl<'a> StatefulWidget for Rain<'a> {
             element.draw_tail(area, buf);
 
             if step {
-                element.step();
+                element.step(rng);
             }
         }
     }
