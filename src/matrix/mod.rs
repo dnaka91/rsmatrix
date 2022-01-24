@@ -455,3 +455,74 @@ impl Widget for Countdown {
         Self::draw_shape(r, buf, rng, self::asciiart::DIGITS[secs % 10]);
     }
 }
+
+pub struct KanaBackground {
+    update_speed: Duration,
+}
+
+pub struct KanaBackgroundState {
+    chars: Vec<(char, u16, u16)>,
+    last_update: Instant,
+}
+
+impl Default for KanaBackgroundState {
+    fn default() -> Self {
+        Self {
+            chars: Vec::new(),
+            last_update: Instant::now(),
+        }
+    }
+}
+
+impl KanaBackground {
+    pub const fn new(update_speed: Duration) -> Self {
+        Self { update_speed }
+    }
+
+    fn new_random(rng: &mut impl Rng, area: Rect) -> (char, u16, u16) {
+        (
+            random_katakana(&mut rand::thread_rng()),
+            rng.gen::<u16>() % area.right(),
+            rng.gen::<u16>() % area.bottom(),
+        )
+    }
+}
+
+impl StatefulWidget for KanaBackground {
+    type State = KanaBackgroundState;
+
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+        let rng = &mut rand::thread_rng();
+        let amount = area.width as usize * area.height as usize / 20;
+
+        if state.chars.len() != amount {
+            state.chars.clear();
+            state
+                .chars
+                .resize_with(amount, || Self::new_random(rng, area));
+        }
+
+        if state.last_update.elapsed() > self.update_speed {
+            for _ in 0..amount / 20 {
+                if let Some(c) = state.chars.choose_mut(rng) {
+                    let new = Self::new_random(rng, area);
+                    *c = new;
+                }
+            }
+            state.last_update = Instant::now();
+        }
+
+        for (c, x, y) in state
+            .chars
+            .iter()
+            .copied()
+            .filter(|v| area.contains((v.1, v.2)))
+        {
+            buf.get_mut(x, y).set_char(c).set_style(
+                Style::reset()
+                    .fg(Color::Indexed(22))
+                    .add_modifier(Modifier::DIM),
+            );
+        }
+    }
+}

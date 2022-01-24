@@ -11,7 +11,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use clap::{AppSettings, Clap};
+use matrix::{KanaBackground, KanaBackgroundState};
 use termion::{event::Key, input::TermRead, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
     backend::{Backend, TermionBackend},
@@ -96,6 +96,7 @@ fn main() -> Result<()> {
 
     let update_speed = Duration::from_millis(1000 / opt.fps);
     let drop_speed = Duration::from_millis(1000 / opt.dps);
+    let mut background_state = KanaBackgroundState::default();
     let mut state = RainState::new();
     let mut border_state = KanaBorderState::default();
     let mut list_state = KanaListState::default();
@@ -107,6 +108,12 @@ fn main() -> Result<()> {
     'drawloop: loop {
         terminal.draw(|f| {
             let size = f.size();
+
+            f.render_stateful_widget(
+                KanaBackground::new(Duration::from_millis(300)),
+                size,
+                &mut background_state,
+            );
             f.render_stateful_widget(
                 Rain::new(&namelist, update_speed, drop_speed),
                 size,
@@ -247,6 +254,7 @@ fn create_event_listener() -> Receiver<KeyEvent> {
 
 trait RectExt {
     fn center_in(self, outer: Self) -> Self;
+    fn contains(self, pos: (u16, u16)) -> bool;
 }
 
 impl RectExt for Rect {
@@ -257,6 +265,10 @@ impl RectExt for Rect {
             self.width,
             self.height,
         )
+    }
+
+    fn contains(self, pos: (u16, u16)) -> bool {
+        self.left() <= pos.0 && pos.0 < self.right() && self.top() <= pos.1 && pos.1 < self.bottom()
     }
 }
 
