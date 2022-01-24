@@ -11,6 +11,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
+use clap::{Parser, Subcommand};
 use matrix::{KanaBackground, KanaBackgroundState};
 use termion::{event::Key, input::TermRead, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
@@ -30,8 +31,8 @@ mod matrix;
 #[cfg(feature = "twitch")]
 mod twitch;
 
-#[derive(Clap)]
-#[clap(global_setting = AppSettings::ColoredHelp)]
+#[derive(Parser)]
+#[clap(about, author, version)]
 struct Opt {
     /// Frames per second.
     #[clap(short, long, default_value = "5")]
@@ -43,7 +44,7 @@ struct Opt {
     source: Option<Source>,
 }
 
-#[derive(Clap)]
+#[derive(Subcommand)]
 enum Source {
     File {
         /// Location to the file containing names.
