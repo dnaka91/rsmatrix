@@ -2,23 +2,27 @@
 #![deny(rust_2018_idioms, clippy::all)]
 #![warn(clippy::nursery)]
 
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::{self, BufReader};
-use std::path::PathBuf;
-use std::sync::mpsc::{self, Receiver};
-use std::thread;
-use std::time::{Duration, Instant};
+use std::{
+    fs::File,
+    io::{self, prelude::*, BufReader},
+    path::PathBuf,
+    sync::mpsc::{self, Receiver},
+    thread,
+    time::{Duration, Instant},
+};
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use crossterm::{
+    event::{self, Event, KeyCode, KeyModifiers},
+    terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
+};
 use matrix::{KanaBackground, KanaBackgroundState};
-use termion::{event::Key, input::TermRead, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
-    backend::{Backend, TermionBackend},
+    backend::{Backend, CrosstermBackend},
     layout::{Margin, Rect},
-    style::Color,
-    style::Style,
+    style::{Color, Style},
     widgets::{Clear, Paragraph},
     Terminal,
 };
@@ -212,9 +216,9 @@ fn main() -> Result<()> {
 }
 
 fn create_terminal() -> Result<Terminal<impl Backend>> {
-    let stdout = io::stdout().into_raw_mode()?;
-    let stdout = AlternateScreen::from(stdout);
-    let backend = TermionBackend::new(stdout);
+    let stdout = RawMode::from(io::stdout())?;
+    let stdout = AlternateScreen::from(stdout)?;
+    let backend = CrosstermBackend::new(stdout);
     Terminal::new(backend).map_err(Into::into)
 }
 
@@ -231,16 +235,22 @@ fn create_event_listener() -> Receiver<KeyEvent> {
     let (tx, rx) = mpsc::channel();
 
     thread::spawn(move || {
-        let mut keys = io::stdin().keys();
+        while let Ok(event) = event::read() {
+            let k = match event {
+                Event::Key(k) => k,
+                _ => continue,
+            };
 
-        while let Some(Ok(k)) = keys.next() {
-            let event = match k {
-                Key::Esc | Key::Char('q') | Key::Ctrl('c') => Some(KeyEvent::Quit),
-                Key::Char('m') => Some(KeyEvent::ToggleMenu),
-                Key::Char('h') => Some(KeyEvent::ToggleHelp),
-                Key::Up => Some(KeyEvent::MoveUp),
-                Key::Down => Some(KeyEvent::MoveDown),
-                Key::Char('\n') => Some(KeyEvent::Select),
+            let event = match k.code {
+                KeyCode::Esc | KeyCode::Char('q') => Some(KeyEvent::Quit),
+                KeyCode::Char('c') if k.modifiers.contains(KeyModifiers::CONTROL) => {
+                    Some(KeyEvent::Quit)
+                }
+                KeyCode::Char('m') => Some(KeyEvent::ToggleMenu),
+                KeyCode::Char('h') => Some(KeyEvent::ToggleHelp),
+                KeyCode::Up => Some(KeyEvent::MoveUp),
+                KeyCode::Down => Some(KeyEvent::MoveDown),
+                KeyCode::Enter => Some(KeyEvent::Select),
                 _ => None,
             };
 
@@ -278,4 +288,54 @@ fn load_file(path: PathBuf) -> Result<Vec<String>> {
         .lines()
         .collect::<Result<Vec<_>, _>>()
         .map_err(Into::into)
+}
+
+struct RawMode<T>(T);
+
+impl<T> RawMode<T> {
+    fn from(value: T) -> Result<Self> {
+        terminal::enable_raw_mode()?;
+        Ok(Self(value))
+    }
+}
+
+impl<T: Write> Write for RawMode<T> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.0.flush()
+    }
+}
+
+impl<T> Drop for RawMode<T> {
+    fn drop(&mut self) {
+        terminal::disable_raw_mode().ok();
+    }
+}
+
+struct AlternateScreen<T: Write>(T);
+
+impl<T: Write> AlternateScreen<T> {
+    fn from(mut value: T) -> Result<Self> {
+        value.execute(EnterAlternateScreen)?;
+        Ok(Self(value))
+    }
+}
+
+impl<T: Write> Write for AlternateScreen<T> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.0.flush()
+    }
+}
+
+impl<T: Write> Drop for AlternateScreen<T> {
+    fn drop(&mut self) {
+        self.0.execute(LeaveAlternateScreen).ok();
+    }
 }

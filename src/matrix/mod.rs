@@ -1,15 +1,15 @@
 //!
 
-use std::collections::VecDeque;
-use std::time::{Duration, Instant};
+use std::{
+    collections::VecDeque,
+    time::{Duration, Instant},
+};
 
-use rand::distributions::Uniform;
-use rand::prelude::*;
+use rand::{distributions::Uniform, prelude::*};
 use tui::{
     buffer::Buffer,
     layout::Rect,
-    style::Modifier,
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
     widgets::{StatefulWidget, Widget},
 };
 
