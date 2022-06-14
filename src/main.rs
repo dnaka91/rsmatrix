@@ -12,7 +12,7 @@ use std::{
 };
 
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueHint};
 use crossterm::{
     event::{self, Event, KeyCode, KeyModifiers},
     terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
@@ -39,10 +39,10 @@ mod twitch;
 #[clap(about, author, version)]
 struct Opt {
     /// Frames per second.
-    #[clap(short, long, default_value = "5")]
+    #[clap(short, long, value_parser, default_value_t = 5)]
     fps: u64,
     /// Drops per second.
-    #[clap(short, long, default_value = "3")]
+    #[clap(short, long, value_parser, default_value_t = 3)]
     dps: u64,
     #[clap(subcommand)]
     source: Option<Source>,
@@ -52,11 +52,13 @@ struct Opt {
 enum Source {
     File {
         /// Location to the file containing names.
+        #[clap(value_parser, value_hint=ValueHint::FilePath)]
         path: PathBuf,
     },
     #[cfg(feature = "twitch")]
     Twitch {
         /// Streamer name to load viewer names from.
+        #[clap(value_parser)]
         username: String,
     },
 }
