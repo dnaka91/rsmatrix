@@ -39,10 +39,10 @@ mod twitch;
 #[clap(about, author, version)]
 struct Opt {
     /// Frames per second.
-    #[clap(short, long, value_parser, default_value_t = 5)]
+    #[clap(short, long, default_value_t = 5)]
     fps: u64,
     /// Drops per second.
-    #[clap(short, long, value_parser, default_value_t = 3)]
+    #[clap(short, long, default_value_t = 3)]
     dps: u64,
     #[clap(subcommand)]
     source: Option<Source>,
@@ -52,13 +52,12 @@ struct Opt {
 enum Source {
     File {
         /// Location to the file containing names.
-        #[clap(value_parser, value_hint=ValueHint::FilePath)]
+        #[clap(value_hint = ValueHint::FilePath)]
         path: PathBuf,
     },
     #[cfg(feature = "twitch")]
     Twitch {
         /// Streamer name to load viewer names from.
-        #[clap(value_parser)]
         username: String,
     },
 }
