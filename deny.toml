@@ -5,7 +5,8 @@ allow = [
 ]
 allow-osi-fsf-free = "both"
 exceptions = [
-    { allow = ["GPL-3.0"], name = "rsmatrix", version = "*" },
+    { allow = ["GPL-3.0"], name = "rsmatrix" },
+    { allow = ["Unicode-DFS-2016"], name = "unicode-ident" },
 ]
 
 [[licenses.clarify]]

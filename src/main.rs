@@ -36,25 +36,28 @@ mod matrix;
 mod twitch;
 
 #[derive(Parser)]
-#[clap(about, author, version)]
-struct Opt {
+#[command(about, author, version)]
+struct Args {
     /// Frames per second.
-    #[clap(short, long, default_value_t = 5)]
+    #[arg(short, long, default_value_t = 5)]
     fps: u64,
     /// Drops per second.
-    #[clap(short, long, default_value_t = 3)]
+    #[arg(short, long, default_value_t = 3)]
     dps: u64,
-    #[clap(subcommand)]
+    #[command(subcommand)]
     source: Option<Source>,
 }
 
 #[derive(Subcommand)]
 enum Source {
+    /// Fill rain drops with the content of a text file. Each line of the text file is considered
+    /// one value.
     File {
         /// Location to the file containing names.
-        #[clap(value_hint = ValueHint::FilePath)]
+        #[arg(value_hint = ValueHint::FilePath)]
         path: PathBuf,
     },
+    /// Fill rain drops with viewer names of a Twitch streamer.
     #[cfg(feature = "twitch")]
     Twitch {
         /// Streamer name to load viewer names from.
@@ -85,9 +88,9 @@ The following commands can be used:
 ";
 
 fn main() -> Result<()> {
-    let opt = Opt::parse();
+    let args = Args::parse();
 
-    let namelist = if let Some(source) = opt.source {
+    let namelist = if let Some(source) = args.source {
         match source {
             Source::File { path } => load_file(path)?,
             #[cfg(feature = "twitch")]
@@ -100,8 +103,8 @@ fn main() -> Result<()> {
     let mut terminal = create_terminal()?;
     let events = create_event_listener();
 
-    let update_speed = Duration::from_millis(1000 / opt.fps);
-    let drop_speed = Duration::from_millis(1000 / opt.dps);
+    let update_speed = Duration::from_millis(1000 / args.fps);
+    let drop_speed = Duration::from_millis(1000 / args.dps);
     let mut background_state = KanaBackgroundState::default();
     let mut state = RainState::new();
     let mut border_state = KanaBorderState::default();
@@ -338,5 +341,16 @@ impl<T: Write> Write for AlternateScreen<T> {
 impl<T: Write> Drop for AlternateScreen<T> {
     fn drop(&mut self) {
         self.0.execute(LeaveAlternateScreen).ok();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Args;
+
+    #[test]
+    fn verify_cli() {
+        use clap::CommandFactory;
+        Args::command().debug_assert();
     }
 }
