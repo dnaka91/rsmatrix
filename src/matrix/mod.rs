@@ -6,7 +6,7 @@ use std::{
 };
 
 use rand::{distributions::Uniform, prelude::*};
-use tui::{
+use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Modifier, Style},

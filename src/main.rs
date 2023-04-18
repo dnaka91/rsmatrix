@@ -19,7 +19,7 @@ use crossterm::{
     ExecutableCommand,
 };
 use matrix::{KanaBackground, KanaBackgroundState};
-use tui::{
+use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Margin, Rect},
     style::{Color, Style},
