@@ -16,9 +16,9 @@ struct Chatters {
 /// Get a list of currently active viewers for a Twitch username.
 pub fn get_viewers(username: &str) -> Result<Vec<String>> {
     let url = format!("https://tmi.twitch.tv/group/user/{}/chatters", username);
-    Ok(attohttpc::get(url)
-        .send()?
-        .json::<Response>()?
+    Ok(ureq::get(&url)
+        .call()?
+        .into_json::<Response>()?
         .chatters
         .viewers)
 }
