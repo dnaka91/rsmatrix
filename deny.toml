@@ -1,9 +1,13 @@
 [licenses]
+version = 2
 allow = [
+	"Apache-2.0",
+	"BSD-3-Clause",
+	"ISC",
+	"MIT",
     "MPL-2.0",
     "OpenSSL",
 ]
-allow-osi-fsf-free = "both"
 exceptions = [
     { allow = ["GPL-3.0"], name = "rsmatrix" },
     { allow = ["Unicode-DFS-2016"], name = "unicode-ident" },
@@ -15,4 +19,13 @@ version = "*"
 expression = "MIT AND ISC AND OpenSSL"
 license-files = [
     { path = "LICENSE", hash = 0xbd0eed23 },
+]
+
+[bans]
+skip = [
+	{ name = "bitflags", version = "1" },
+	{ name = "syn", version = "1" },
+]
+skip-tree = [
+	{ name = "windows-sys", version = "0.48", depth = 3 },
 ]

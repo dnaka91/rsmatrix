@@ -516,7 +516,7 @@ impl StatefulWidget for KanaBackground {
             .chars
             .iter()
             .copied()
-            .filter(|v| area.contains((v.1, v.2)))
+            .filter(|v| area.contains((v.1, v.2).into()))
         {
             buf.get_mut(x, y).set_char(c).set_style(
                 Style::reset()

@@ -84,8 +84,7 @@ The following commands can be used:
   - m toggle the menu to navigate to different areas
     - ▲ navigate menu up
     - ▼ navigate menu down
-  - q quit the application\
-";
+  - q quit the application";
 
 fn main() -> Result<()> {
     let args = Args::parse();
