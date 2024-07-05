@@ -139,7 +139,7 @@ fn main() -> Result<()> {
                     f.render_widget(Clear, r);
                     f.render_stateful_widget(border, r, &mut border_state);
 
-                    let r = r.inner(&Margin {
+                    let r = r.inner(Margin {
                         vertical: 2,
                         horizontal: 3,
                     });
@@ -155,7 +155,7 @@ fn main() -> Result<()> {
                     f.render_widget(Clear, r);
                     f.render_stateful_widget(border, r, &mut border_state);
 
-                    let r = r.inner(&Margin {
+                    let r = r.inner(Margin {
                         vertical: 2,
                         horizontal: 3,
                     });
@@ -268,7 +268,6 @@ fn create_event_listener() -> Receiver<KeyEvent> {
 
 trait RectExt {
     fn center_in(self, outer: Self) -> Self;
-    fn contains(self, pos: (u16, u16)) -> bool;
 }
 
 impl RectExt for Rect {
@@ -279,10 +278,6 @@ impl RectExt for Rect {
             self.width,
             self.height,
         )
-    }
-
-    fn contains(self, pos: (u16, u16)) -> bool {
-        self.left() <= pos.0 && pos.0 < self.right() && self.top() <= pos.1 && pos.1 < self.bottom()
     }
 }
 

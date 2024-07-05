@@ -1,4 +1,4 @@
-//!
+//! Implementation of the different componenets that make up the Matrix-ish user interface.
 
 use std::{
     collections::VecDeque,

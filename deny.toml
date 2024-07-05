@@ -23,8 +23,7 @@ license-files = [
 
 [bans]
 skip = [
-	{ name = "bitflags", version = "1" },
-	{ name = "syn", version = "1" },
+	{ name = "itertools", version = "0.12" },
 ]
 skip-tree = [
 	{ name = "windows-sys", version = "0.48", depth = 3 },
